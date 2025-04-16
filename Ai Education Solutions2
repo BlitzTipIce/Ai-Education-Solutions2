@@ -1,0 +1,69 @@
+<!-- Add below the hero section -->
+<section id="get-started" class="get-started" style="padding:2rem; text-align:center;">
+  <h2>Generate a Lesson Plan</h2>
+  <p>Describe your subject and grade level:</p>
+  <textarea id="lessonInput" rows="4" cols="50" placeholder="e.g. Grade 6 Science: Photosynthesis"></textarea><br><br>
+  <button onclick="generateLesson()">Generate Lesson</button>
+  <div id="lessonOutput" style="margin-top:1rem;"></div>
+</section>
+<script>
+  async function generateLesson() {
+    const input = document.getElementById("lessonInput").value;
+    const output = document.getElementById("lessonOutput");
+
+    output.innerHTML = "Generating lesson plan...";
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer YOUR_OPENAI_API_KEY"
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "You are an expert teacher who creates engaging, grade-appropriate lesson plans." },
+          { role: "user", content: `Create a lesson plan for: ${input}` }
+        ]
+      })
+    });
+
+    const data = await response.json();
+    output.innerHTML = `<pre>${data.choices[0].message.content}</pre>`;
+  }
+</script>
+// server.js
+const express = require("express");
+const cors = require("cors");
+const { Configuration, OpenAIApi } = require("openai");
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const openai = new OpenAIApi(new Configuration({
+  apiKey: process.env.OPENAI_API_KEY
+}));
+
+app.post("/generate-lesson", async (req, res) => {
+  const { prompt } = req.body;
+
+  const completion = await openai.createChatCompletion({
+    model: "gpt-3.5-turbo",
+    messages: [
+      { role: "system", content: "You are an expert teacher who creates lesson plans." },
+      { role: "user", content: prompt }
+    ]
+  });
+
+  res.json({ content: completion.data.choices[0].message.content });
+});
+
+app.listen(3000, () => console.log("Server running on port 3000"));
+const response = await fetch("http://localhost:3000/generate-lesson", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ prompt: `Create a lesson plan for: ${input}` })
+});
